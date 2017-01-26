@@ -91,10 +91,14 @@ start:
 	mov rsi, [rsp+16]
 	call alloc_pair
 	mov [rsp+24], rax
+	mov rdi, rax
+	mov rsi, [rsp+8]
+	call alloc_pair
+	mov [rsp], rax
 
 	call print_heap
 
-	mov rdi, [rsp+24]
+	mov rdi, [rsp]
 	call collect
 
 	call print_heap
@@ -204,6 +208,8 @@ collect_step:
 	je collect_fixed_matrix
 	cmp byte [rdi], TYPE_PAIR
 	je collect_pair
+	cmp byte [rdi], TYPE_MOVED
+	je collect_moved_object
 	jne print_heap_error ; I guess this is a more general error...
 collect_fixed_matrix:
 	call sizeof_fixed_matrix
@@ -216,6 +222,11 @@ collect_fixed_matrix:
 	mov rdi, [rsp+16] ; size
 	call opposing_heap_reserve
 	jmp collect_mark_moved
+collect_moved_object:
+	; nothing to do but return the new pointer
+	mov rax, [rdi+moved_heap_obj_newptr]
+	add rsp, 24
+	ret
 collect_pair:
 	mov rdx, pair_object_size
 	call get_opposing_heap_cursor
